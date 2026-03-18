@@ -31,7 +31,7 @@ import {
 } from '../controllers/authController.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { internalKey } from '../middleware/internalKey.js';
-import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
+import { authLimiter, otpLimiter } from '../middleware/RateLimiter.js';
 
 const router = Router();
 
