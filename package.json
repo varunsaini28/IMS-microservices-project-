@@ -1,0 +1,18 @@
+{
+  "name": "ims",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    
+     "start:all": "concurrently -n AUTH,INTERN,TASKS,CONFIG,PROJECTS,NOTIFY,ANALYTICS,AUDIT,GATEWAY -c blue,green,yellow,magenta,cyan,white,red,gray \"npm start --prefix backend/services/auth-service\" \"npm start --prefix backend/services/intern-service\" \"npm start --prefix backend/services/tasks-service\" \"npm start --prefix backend/services/config-service\" \"npm start --prefix backend/services/projects-service\" \"npm start --prefix backend/services/notification-service\" \"npm start --prefix backend/services/analytics-service\" \"npm start --prefix backend/services/audit-service\" \"npm start --prefix backend/gateway\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

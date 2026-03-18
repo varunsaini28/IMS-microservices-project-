@@ -1,0 +1,2 @@
+-- Run this if projects table does not have a status column (createProject will work without it, but PATCH status and filtering by status need it).
+-- ALTER TABLE projects ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'planning';
