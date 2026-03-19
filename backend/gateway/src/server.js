@@ -2,9 +2,10 @@ import express from 'express';
 import cors from 'cors';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { env } from './config/env.js';
-import { limiter } from './config/rateLimit.js';
+import { bulkLimiter, limiter } from './config/rateLimit.js';
 import { verifyJwt } from './middleware/jwtVerifier.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import crypto from 'crypto';
 
 const app = express();
 
@@ -18,10 +19,42 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(limiter);
+// Request context + structured access logs
+app.use((req, res, next) => {
+  req.requestId = crypto.randomUUID();
+  const start = Date.now();
+  res.on('finish', () => {
+    const ms = Date.now() - start;
+    const log = {
+      level: 'info',
+      msg: 'gateway_request',
+      requestId: req.requestId,
+      method: req.method,
+      path: req.originalUrl || req.path,
+      status: res.statusCode,
+      durationMs: ms,
+      userId: req.user?.id || null,
+    };
+    console.log(JSON.stringify(log));
+  });
+  next();
+});
+
 app.use(verifyJwt);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
+// Rate limiting (route-aware)
+app.use((req, res, next) => {
+  // Heavy bulk operations: allow but protect separately
+  if (
+    req.path === '/tasks/bulk-assign' ||
+    (/^\/projects\/[^/]+\/interns\/bulk$/.test(req.path) && req.method === 'POST')
+  ) {
+    return bulkLimiter(req, res, next);
+  }
+  return limiter(req, res, next);
+});
 
 const makeProxy = (target) =>
   createProxyMiddleware({
