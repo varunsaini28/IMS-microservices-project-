@@ -1,4 +1,4 @@
-# 🚀 Intern Management System – Frontend
+# 🚀 Intern Management System
 
 A modern, enterprise‑grade frontend for an Intern Management System, built with **React + Vite**. It integrates with a microservices backend via a single API gateway, supports two roles (**Admin** and **Intern**), and provides a rich set of features including authentication (OTP), dashboards, task/project management, attendance, leaves, notifications, analytics, configuration tools, and audit logs. The UI is fully responsive, uses **Tailwind CSS** for styling, **lucide-react** for icons, and includes many client‑side enhancements (dark mode, keyboard shortcuts, export, etc.).
 
