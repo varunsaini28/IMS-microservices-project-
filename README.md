@@ -141,18 +141,18 @@ All services are behind the gateway, e.g., `https://ims-gatewayserver.onrender.c
 | **Routing**       | React Router v6                                                            |
 | **Styling**       | Tailwind CSS                                                               |
 | **Icons**         | lucide‑react                                                               |
-| **State Management** | Context API (auth), TanStack Query (server state)                          |
+| **State Management** | Context API (auth), TanStack Query (server state)                       |
 | **HTTP Client**   | Axios (with interceptors for auth & refresh)                               |
 | **Forms**         | react‑hook‑form + zod                                                      |
 | **Charts**        | recharts                                                                   |
 | **Dates**         | date‑fns                                                                   |
 | **Notifications** | react‑hot‑toast                                                            |
-| **Calendar**      | react‑big‑calendar (optional)                                              |
-| **Onboarding**    | react‑joyride (optional)                                                   |
+| **Calendar**      | react‑big‑calendar                                                         |
+| **Onboarding**    | react‑joyride                                                              |
 | **PWA**           | vite‑plugin‑pwa                                                            |
-| **Drag‑drop**     | react‑grid‑layout (optional)                                               |
-| **CSV/PDF export**| papaparse, jspdf, jspdf-autotable                                         |
-| **Virtualization**| tanstack‑virtual (optional)                                                |
+| **Drag‑drop**     | react‑grid‑layout                                                          |
+| **CSV/PDF export**| papaparse, jspdf, jspdf-autotable                                          |
+| **Virtualization**| tanstack‑virtual                                                           |
 
 ---
 
