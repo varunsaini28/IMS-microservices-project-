@@ -1,11 +1,33 @@
+// // import { defineConfig } from 'vite'
+// // import react from '@vitejs/plugin-react'
+// // import tailwindcss from '@tailwindcss/vite'
+
+// // // https://vite.dev/config/
+// // export default defineConfig({
+// //   plugins: [react(),tailwindcss()],
+// // })
+
+
+
 // import { defineConfig } from 'vite'
 // import react from '@vitejs/plugin-react'
 // import tailwindcss from '@tailwindcss/vite'
 
 // // https://vite.dev/config/
 // export default defineConfig({
-//   plugins: [react(),tailwindcss()],
+//   plugins: [react(), tailwindcss()],
+
+//   server: {
+//     proxy: {
+//       '/api': {
+//         target: 'https://ims-gatewayserver.onrender.com',
+//         changeOrigin: true,
+//         secure: true
+//       }
+//     }
+//   }
 // })
+
 
 
 
@@ -13,7 +35,6 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
 
@@ -22,7 +43,8 @@ export default defineConfig({
       '/api': {
         target: 'https://ims-gatewayserver.onrender.com',
         changeOrigin: true,
-        secure: true
+        secure: true,
+        rewrite: (path) => path // keep /api prefix
       }
     }
   }
