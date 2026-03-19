@@ -4,6 +4,24 @@ A modern, enterprise‑grade frontend for an Intern Management System, built wit
 
 ---
 
+## 📚 Table of Contents
+
+- [Features](#-features)
+- [Backend Architecture](#-backend-architecture)
+- [Tech Stack](#-tech-stack)
+- [Prerequisites](#-prerequisites)
+- [Installation](#-installation)
+- [Environment Variables](#-environment-variables)
+- [Project Structure](#-project-structure)
+- [API Integration (Services)](#-api-integration-services)
+- [Running the App](#-running-the-app)
+- [Deployment](#-deployment)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Acknowledgements](#-acknowledgements)
+
+---
+
 ## ✨ Features
 
 ### 🔐 Authentication & User Onboarding
@@ -96,26 +114,45 @@ A modern, enterprise‑grade frontend for an Intern Management System, built wit
 
 ---
 
+## 🏗 Backend Architecture
+
+The frontend communicates exclusively with a **single API Gateway** that routes requests to the appropriate microservice. The backend consists of the following **8+ microservices**:
+
+| Service          | Prefix          | Description                                                                 |
+|------------------|-----------------|-----------------------------------------------------------------------------|
+| **Auth Service**   | `/auth`         | Handles authentication, user registration (OTP), token refresh, user listing |
+| **Intern Service** | `/intern`       | Manages intern profiles, documents, skills, certificates, evaluations       |
+| **Tasks Service**  | `/tasks`        | Manages tasks, attendance, leaves, work logs, calendar                      |
+| **Projects Service**| `/projects`     | Manages projects and intern assignments (bulk assign, remove)               |
+| **Analytics Service**| `/analytics`    | Provides analytics endpoints for productivity, project progress, etc.       |
+| **Notifications Service**| `/notifications`| Handles in‑app notifications and bulk email sending                        |
+| **Config Service** | `/config`       | Manages feature toggles, settings, form schemas, workflow rules, permissions|
+| **Audit Service**  | `/audit`        | Stores and retrieves audit logs for all significant events                  |
+
+All services are behind the gateway, e.g., `https://ims-gatewayserver.onrender.com/auth/login`. This simplifies frontend integration and centralizes cross‑cutting concerns like CORS and rate limiting.
+
+---
+
 ## 🛠 Tech Stack
 
 | Category          | Technology                                                                 |
 |-------------------|----------------------------------------------------------------------------|
-| Core              | React 18, Vite                                                             |
-| Routing           | React Router v6                                                            |
-| Styling           | Tailwind CSS                                                               |
-| Icons             | lucide‑react                                                               |
-| State Management  | Context API (auth), TanStack Query (server state)                          |
-| HTTP Client       | Axios (with interceptors for auth & refresh)                               |
-| Forms             | react‑hook‑form + zod                                                      |
-| Charts            | recharts                                                                   |
-| Dates             | date‑fns                                                                   |
-| Notifications     | react‑hot‑toast                                                            |
-| Calendar          | react‑big‑calendar (optional)                                              |
-| Onboarding        | react‑joyride (optional)                                                   |
-| PWA               | vite‑plugin‑pwa                                                            |
-| Drag‑drop         | react‑grid‑layout (optional)                                               |
-| CSV/PDF export    | papaparse, jspdf, jspdf-autotable                                         |
-| Virtualization    | tanstack‑virtual (optional)                                                |
+| **Core**          | React 18, Vite                                                             |
+| **Routing**       | React Router v6                                                            |
+| **Styling**       | Tailwind CSS                                                               |
+| **Icons**         | lucide‑react                                                               |
+| **State Management** | Context API (auth), TanStack Query (server state)                          |
+| **HTTP Client**   | Axios (with interceptors for auth & refresh)                               |
+| **Forms**         | react‑hook‑form + zod                                                      |
+| **Charts**        | recharts                                                                   |
+| **Dates**         | date‑fns                                                                   |
+| **Notifications** | react‑hot‑toast                                                            |
+| **Calendar**      | react‑big‑calendar (optional)                                              |
+| **Onboarding**    | react‑joyride (optional)                                                   |
+| **PWA**           | vite‑plugin‑pwa                                                            |
+| **Drag‑drop**     | react‑grid‑layout (optional)                                               |
+| **CSV/PDF export**| papaparse, jspdf, jspdf-autotable                                         |
+| **Virtualization**| tanstack‑virtual (optional)                                                |
 
 ---
 
@@ -134,12 +171,37 @@ A modern, enterprise‑grade frontend for an Intern Management System, built wit
    git clone https://github.com/your-org/intern-management-frontend.git
    cd intern-management-frontend
 
-
 2. Install dependencies
+
 npm install
+# or
+yarn
 
-Set up environment variables
-Create a .env file in the root
+3. Set up environment variables
+Create a .env file in the root (see Environment Variables).
 
 
+🔗 API Integration (Services)
+All API calls are organized into service modules inside src/services/. Each module corresponds to a backend microservice (via the gateway). All modules use the same api instance from src/lib/axios.js, which automatically attaches the JWT token and handles token refresh.
 
+Service Module	File	Description
+authApi	authApi.js	Login, register, verify, refresh, logout, me, users
+internApi	internApi.js	Profile, documents, skills, certificates, evaluations
+tasksApi	tasksApi.js	Tasks, attendance, leaves, worklogs, calendar
+projectsApi	projectsApi.js	Projects, assignments, bulk assign
+analyticsApi	analyticsApi.js	Analytics endpoints
+notificationsApi	notificationsApi.js	Notifications, bulk email
+configApi	configApi.js	Feature toggles, settings, schemas, workflows, permissions
+auditApi	auditApi.js	Audit logs
+Each method returns the data property from the axios response (i.e., the parsed JSON). Error handling is done in the components using react‑query or try/catch.
+
+
+🏃 Running the App
+Development: npm run dev (Vite dev server with HMR)
+
+Production build: npm run build (outputs to dist/)
+
+Preview production build: npm run preview
+
+
+   
