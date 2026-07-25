@@ -1,207 +1,325 @@
-# 🚀 Intern Management System
+<div align="center">
 
-A modern, enterprise‑grade frontend for an Intern Management System, built with **React + Vite**. It integrates with a microservices backend via a single API gateway, supports two roles (**Admin** and **Intern**), and provides a rich set of features including authentication (OTP), dashboards, task/project management, attendance, leaves, notifications, analytics, configuration tools, and audit logs. The UI is fully responsive, uses **Tailwind CSS** for styling, **lucide-react** for icons, and includes many client‑side enhancements (dark mode, keyboard shortcuts, export, etc.).
+# 🚀 Intern Management System (IMS)
 
----
+**A microservices-based platform for managing interns, tasks, projects, attendance, leaves, and more.**
 
-## 📚 Table of Contents
+Built with **Node.js + Express** microservices behind an API Gateway, **MongoDB** & **PostgreSQL**, **RabbitMQ** for events, **Redis** for sessions/rate-limiting, and a **React + Vite** frontend.
 
-- [Features](#-features)
-- [Backend Architecture](#-backend-architecture)
-- [Tech Stack](#-tech-stack)
-- [Prerequisites](#-prerequisites)
-- [Installation](#-installation)
-- [Environment Variables](#-environment-variables)
-- [Project Structure](#-project-structure)
-- [API Integration (Services)](#-api-integration-services)
-- [Running the App](#-running-the-app)
-- [Deployment](#-deployment)
-- [Contributing](#-contributing)
-- [License](#-license)
-- [Acknowledgements](#-acknowledgements)
+
+</div>
 
 ---
 
-## ✨ Features
+## 📖 Overview
 
-### 🔐 Authentication & User Onboarding
-- Login with email/password
-- 2‑step registration with OTP (email verification)
-- OTP resend functionality
-- JWT-based session management with automatic token refresh
-- Role‑based redirects (Admin → `/admin`, Intern → `/intern`)
+IMS is a full-stack, event-driven microservices system for running an internship program end-to-end: onboarding interns (with OTP-verified registration), assigning and tracking tasks and projects, managing attendance and leave, sending notifications and bulk emails, and giving admins analytics, audit logs, and configurable workflows — all behind a single API gateway.
 
-### 📊 Role‑Based Dashboards
-#### Admin Dashboard
-- Summary cards: total interns, active projects, pending leaves, task completion rate
-- Recent activities (audit logs, notifications)
-- Quick actions: create project, assign task, mark attendance, send bulk email
-
-#### Intern Dashboard
-- Personal stats: tasks assigned/completed this week, attendance %, upcoming deadlines
-- Quick links to tasks, projects, notifications
-
-### 👤 Intern Profile Management
-- View/edit personal details (first/last name, DOB, phone, address)
-- Upload/download documents
-- Manage skills (add/remove)
-- View certificates (read‑only) – admin can upload
-- View evaluations (read‑only) – admin can create
-
-### 📋 Task Management
-- List tasks with filters (status, project, assignedTo)
-- Create/edit tasks (admin)
-- Update task status (intern)
-- Work logs (add/edit/delete)
-- Attendance: intern view history, admin view all & mark attendance
-- Leave requests: intern apply/delete, admin approve/reject
-
-### 📁 Project Management
-- List projects (admin sees all, interns see assigned)
-- Project details with assigned interns
-- Create/edit projects (admin)
-- Assign/remove interns to/from projects (admin)
-- Bulk assign interns with idempotency key
-
-### 📈 Analytics & Reporting
-- Intern: personal productivity charts (tasks over time, work hours)
-- Admin: overall stats, project progress, attendance summaries
-- Charts built with **recharts**
-
-### 🔔 Notifications
-- Notification bell with unread count
-- Dropdown of recent notifications
-- Full notifications page with “mark all read”
-- Admin bulk email to interns
-
-### ⚙️ Configuration & Admin Tools
-- Feature toggles (CRUD)
-- Settings (key‑value)
-- Form schemas (JSON schema editor)
-- Workflow rules (status transitions, required fields)
-- Permissions (role‑resource‑actions)
-
-### 📜 Audit Logs (Admin only)
-- Table with routing key, event data, timestamp
-- Filter by routing key and date range
-- Pagination
-
-### 📅 Calendar
-- Monthly view showing working days, holidays, non‑working days
-- Admin can set day types with labels
-
-### 👥 User Management (Admin only)
-- List all users with role, email, full name
-- Filter by role
-
-### 🧩 Frontend‑Only Enhancements
-- **Dark mode** toggle (persisted in localStorage)
-- **Keyboard shortcuts** (`Ctrl+N` new task, `Ctrl+K` global search, `?` help)
-- **Data export** to CSV/PDF
-- **Form draft autosave** (localStorage)
-- **Undo/redo** for destructive actions
-- **Bulk actions** with selection
-- **Global search** (client‑side)
-- **Guided tour** for first‑time users
-- **Activity timeline** (personal feed)
-- **Session timeout warning** with extend option
-- **CSV import** for bulk task/project creation (admin)
-- **Customizable dashboard widgets** (drag‑drop, save layout)
-- **In‑app documentation & tooltips**
-- **Virtualized lists** for large tables
-- **Code splitting & prefetching** for performance
-- **PWA** – offline support, installable
+Services communicate synchronously through the **gateway** (HTTP) and asynchronously through **RabbitMQ** (topic exchange `intern-management.topic`) for cross-service events like task assignment, attendance, leave approval, and audit logging.
 
 ---
 
-## 🏗 Backend Architecture
+## 🏗 Architecture
 
-The frontend communicates exclusively with a **single API Gateway** that routes requests to the appropriate microservice. The backend consists of the following **8+ microservices**:
+```
+                              ┌────────────────────┐
+                    ┌────────▶│   Frontend (Vite)   │
+                    │         └────────────────────┘
+                    │                    │
+                    │                    ▼
+                    │         ┌────────────────────┐
+                    │         │   API Gateway       │  ── JWT verify, rate limiting,
+                    │         │   (Express)          │     request proxying/logging
+                    │         └──────────┬─────────┘
+                    │                    │
+      ┌─────────────┼─────────┬──────────┼──────────┬─────────────┬─────────────┐
+      ▼             ▼         ▼          ▼          ▼             ▼             ▼
+  ┌────────┐  ┌──────────┐┌────────┐┌─────────┐┌──────────┐┌─────────────┐┌───────────┐
+  │  Auth  │  │  Intern  ││ Tasks  ││Projects ││  Config  ││ Notification││ Analytics │
+  │Service │  │ Service  ││Service ││ Service ││ Service  ││   Service   ││  Service  │
+  └────┬───┘  └────┬─────┘└───┬────┘└────┬────┘└────┬─────┘└──────┬──────┘└─────┬─────┘
+       │            │          │          │          │             │             │
+       └────────────┴──────────┴──────────┴──────────┴─────────────┴─────────────┘
+                                        │
+                              ┌─────────▼─────────┐
+                              │   RabbitMQ Topic   │  (intern-management.topic)
+                              │      Exchange       │
+                              └─────────┬─────────┘
+                                        │
+                                 ┌──────▼──────┐
+                                 │ Audit Service│ (binds to '#', logs every event)
+                                 └─────────────┘
+```
 
-| Service          | Prefix          | Description                                                                 |
-|------------------|-----------------|-----------------------------------------------------------------------------|
-| **Auth Service**   | `/auth`         | Handles authentication, user registration (OTP), token refresh, user listing |
-| **Intern Service** | `/intern`       | Manages intern profiles, documents, skills, certificates, evaluations       |
-| **Tasks Service**  | `/tasks`        | Manages tasks, attendance, leaves, work logs, calendar                      |
-| **Projects Service**| `/projects`     | Manages projects and intern assignments (bulk assign, remove)               |
-| **Analytics Service**| `/analytics`    | Provides analytics endpoints for productivity, project progress, etc.       |
-| **Notifications Service**| `/notifications`| Handles in‑app notifications and bulk email sending                        |
-| **Config Service** | `/config`       | Manages feature toggles, settings, form schemas, workflow rules, permissions|
-| **Audit Service**  | `/audit`        | Stores and retrieves audit logs for all significant events                  |
+Each service owns its own database (PostgreSQL or MongoDB — polyglot persistence) and communicates state changes via events rather than direct calls, keeping services loosely coupled.
 
-All services are behind the gateway, e.g., `https://ims-gatewayserver.onrender.com/auth/login`. This simplifies frontend integration and centralizes cross‑cutting concerns like CORS and rate limiting.
+---
+
+## 🧩 Services
+
+| Service | Port (default) | Database | Responsibility |
+|---|---|---|---|
+| **Gateway** | 5000 | Redis (rate limiting) | JWT verification, request proxying, rate limiting, structured access logs |
+| **Auth Service** | 4001 | PostgreSQL + Redis | Registration (OTP via email), login, refresh tokens, session management, user listing |
+| **Intern Service** | 4002 | PostgreSQL | Intern profiles, documents, skills, certificates, evaluations |
+| **Tasks Service** | 4003 | MongoDB | Tasks, bulk task assignment, attendance, leave requests, work logs, calendar, deadline reminders |
+| **Config Service** | 4004 | MongoDB | Feature toggles, settings, form schemas, workflow rules, permissions |
+| **Projects Service** | 4005 | PostgreSQL | Projects, intern assignments (single + bulk), project status |
+| **Notification Service** | 4006 | MongoDB | Email delivery (SMTP), in-app notifications, event-driven emails (OTP, welcome, task assigned, deadline reminders) |
+| **Analytics Service** | 4007 | PostgreSQL | Productivity metrics, attendance summaries, project progress, overall stats |
+| **Audit Service** | 4008 | MongoDB | Listens to *all* RabbitMQ events (`#`) and stores an immutable audit trail |
+
+All services expose a `GET /health` endpoint and share the same event exchange (`intern-management.topic`) for pub/sub communication.
+
+---
+
+## ✨ Frontend Features
+
+- 🔐 **Auth** — login, 2-step OTP registration, JWT with silent refresh, role-based routing (Admin/Manager vs. Intern)
+- 📊 **Dashboards** — role-specific stats, quick actions, recent activity
+- 👤 **Intern profile** — documents, skills, certificates, evaluations
+- 📋 **Tasks** — filters, sorting, status updates, work logs, CSV/PDF export, bulk assignment
+- 📁 **Projects** — CRUD, intern assignment (single & bulk with idempotency keys)
+- 📈 **Analytics** — productivity & attendance charts (Recharts)
+- 🔔 **Notifications** — in-app feed, admin bulk email
+- ⚙️ **Admin config** — feature toggles, settings, form schemas, workflow rules, permissions
+- 📜 **Audit logs** — filterable, paginated event trail
+- 📅 **Calendar** — working days / holidays / non-working days
+- 🌗 Dark mode, `Ctrl+K` global search, keyboard shortcuts, offline indicator, local draft autosave
 
 ---
 
 ## 🛠 Tech Stack
 
-| Category          | Technology                                                                 |
-|-------------------|----------------------------------------------------------------------------|
-| **Core**          | React 18, Vite                                                             |
-| **Routing**       | React Router v6                                                            |
-| **Styling**       | Tailwind CSS                                                               |
-| **Icons**         | lucide‑react                                                               |
-| **State Management** | Context API (auth), TanStack Query (server state)                       |
-| **HTTP Client**   | Axios (with interceptors for auth & refresh)                               |
-| **Forms**         | react‑hook‑form + zod                                                      |
-| **Charts**        | recharts                                                                   |
-| **Dates**         | date‑fns                                                                   |
-| **Notifications** | react‑hot‑toast                                                            |
-| **Calendar**      | react‑big‑calendar                                                         |
-| **Onboarding**    | react‑joyride                                                              |
-| **PWA**           | vite‑plugin‑pwa                                                            |
-| **Drag‑drop**     | react‑grid‑layout                                                          |
-| **CSV/PDF export**| papaparse, jspdf, jspdf-autotable                                          |
-| **Virtualization**| tanstack‑virtual                                                           |
+**Backend**
+- Node.js, Express 5
+- PostgreSQL (`pg`) & MongoDB (`mongoose`) — per-service polyglot persistence
+- RabbitMQ (`amqplib`) — event bus
+- Redis — sessions, OTP storage, rate limiting
+- JWT (access + refresh tokens), bcrypt
+- `http-proxy-middleware` — gateway routing
+- Nodemailer — transactional email
+
+**Frontend**
+- React 19 + Vite
+- React Router v7
+- TanStack Query (server state) + Context API (auth)
+- Tailwind CSS 4
+- React Hook Form + Zod
+- Recharts, Axios, react-hot-toast
+- Papaparse / jsPDF — CSV & PDF export
 
 ---
 
-## 📦 Prerequisites
+## 📁 Project Structure
 
-- **Node.js** 18+ and **npm** / **yarn**
-- Backend services running (or accessible via the deployed gateway)
-- A `.env` file with the gateway URL (see below)
+```
+.
+├── backend/
+│   ├── gateway/                    # API Gateway (auth, rate limit, proxy)
+│   └── services/
+│       ├── auth-service/
+│       ├── intern-service/
+│       ├── tasks-service/
+│       ├── config-service/
+│       ├── projects-service/
+│       ├── notification-service/
+│       ├── analytics-service/
+│       └── audit-service/
+│           each service:
+│           └── src/
+│               ├── config/         # env, db, redis, rabbitmq
+│               ├── controllers/
+│               ├── middleware/     # auth, error handling, role guards
+│               ├── models/         # (Mongo) or SQL migrations (Postgres)
+│               ├── routes/
+│               └── server.js
+│
+└── frontend/
+    └── src/
+        ├── components/             # layout + reusable UI
+        ├── contexts/                # AuthContext
+        ├── hooks/                   # useAuth, useDebounce, useLocalStorage...
+        ├── pages/                   # admin/, intern/, tasks/, projects/, ...
+        ├── routes/                  # ProtectedRoute, RoleBasedRoute
+        ├── services/                 # one API client module per backend service
+        └── lib/                     # axios instance, react-query client
+```
 
 ---
 
-## 🔧 Installation
+## 🚀 Getting Started
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/your-org/intern-management-frontend.git
-   cd intern-management-frontend
+### Prerequisites
+- Node.js 18+
+- PostgreSQL instance
+- MongoDB instance
+- Redis instance
+- RabbitMQ instance
+- SMTP credentials (for the notification service)
 
-2. Install dependencies
+### 1. Clone & install root tooling
+```bash
+git clone https://github.com/<your-username>/intern-management-system.git
+cd intern-management-system
+npm install   # installs `concurrently` used by start:all
+```
 
-npm install
-# or
-yarn
+### 2. Install dependencies per service
+```bash
+for d in backend/gateway backend/services/*/ frontend; do
+  (cd "$d" && npm install)
+done
+```
 
-3. Set up environment variables
-Create a .env file in the root (see Environment Variables).
+### 3. Configure environment variables
+
+Each service reads its own `.env` (see [Environment Variables](#-environment-variables) below). Create one `.env` per service directory.
+
+### 4. Run everything at once (backend)
+```bash
+npm run start:all
+```
+This uses `concurrently` to boot the gateway and all 8 services together with colored, labeled logs.
+
+Or run a single service during development:
+```bash
+cd backend/services/tasks-service
+npm run dev
+```
+
+### 5. Run the frontend
+```bash
+cd frontend
+npm run dev
+```
+
+The app will be available at `http://localhost:5173` and will talk to the gateway at the URL configured in `frontend/.env` / `vite.config.js` proxy.
+
+---
+
+## 🔑 Environment Variables
+
+### Gateway (`backend/gateway/.env`)
+```env
+PORT=5000
+REDIS_URL=redis://localhost:6379
+FRONTEND_URL=http://localhost:5173
+AUTH_SERVICE_URL=http://localhost:4001
+INTERN_SERVICE_URL=http://localhost:4002
+TASKS_SERVICE_URL=http://localhost:4003
+CONFIG_SERVICE_URL=http://localhost:4004
+PROJECTS_SERVICE_URL=http://localhost:4005
+NOTIFICATION_SERVICE_URL=http://localhost:4006
+ANALYTICS_SERVICE_URL=http://localhost:4007
+AUDIT_SERVICE_URL=http://localhost:4008
+```
+
+### Auth Service
+```env
+PORT=4001
+DATABASE_URL=postgres://user:pass@localhost:5432/ims_auth
+REDIS_URL=redis://localhost:6379
+RABBITMQ_URL=amqp://localhost
+RABBITMQ_HOST=localhost
+JWT_SECRET=change_me
+JWT_REFRESH_SECRET=change_me_too
+INTERNAL_API_KEY=shared_secret_for_service_to_service_calls
+```
+
+### Intern / Projects / Analytics Services (PostgreSQL-backed)
+```env
+PORT=<service-port>
+DATABASE_URL=postgres://user:pass@localhost:5432/ims_<service>
+REDIS_URL=redis://localhost:6379
+RABBITMQ_URL=amqp://localhost
+JWT_SECRET=change_me
+```
+
+### Tasks / Config / Audit Services (MongoDB-backed)
+```env
+PORT=<service-port>
+MONGODB_URI=mongodb://localhost:27017/ims_<service>
+REDIS_URL=redis://localhost:6379
+RABBITMQ_URL=amqp://localhost
+JWT_SECRET=change_me
+```
+
+### Notification Service
+```env
+PORT=4006
+MONGODB_URI=mongodb://localhost:27017/ims_notifications
+REDIS_URL=redis://localhost:6379
+RABBITMQ_URL=amqp://localhost
+JWT_SECRET=change_me
+AUTH_SERVICE_URL=http://localhost:4001
+INTERNAL_API_KEY=shared_secret_for_service_to_service_calls
+SMTP_HOST=smtp.example.com
+SMTP_PORT=465
+SMTP_USER=your_smtp_user
+SMTP_PASS=your_smtp_pass
+EMAIL_FROM="IMS <no-reply@example.com>"
+```
+
+### Frontend (`frontend/.env`)
+```env
+VITE_API_BASE_URL=http://localhost:5000
+```
+
+> All required env vars are validated on boot — each service will throw and exit immediately if a required key is missing, so misconfiguration fails fast instead of silently.
+
+---
+
+## 🔌 Gateway Routing
+
+| Path prefix | Proxied to |
+|---|---|
+| `/auth/*` | Auth Service |
+| `/intern/*` | Intern Service |
+| `/tasks/*` | Tasks Service |
+| `/config/*` | Config Service |
+| `/projects/*` | Projects Service |
+| `/notifications/*` | Notification Service |
+| `/analytics/*` | Analytics Service |
+| `/audit/*` | Audit Service |
+
+`GET /health`, and everything under `/auth`, is public; all other routes require a valid JWT (verified against the auth service). Bulk endpoints (`/tasks/bulk-assign`, `/projects/:id/interns/bulk`) get a separate, more permissive rate limit than the rest of the API.
+
+---
+
+## 📡 Event Catalog (RabbitMQ)
+
+Selected routing keys published on `intern-management.topic`:
+
+| Routing key | Published by | Consumed by |
+|---|---|---|
+| `auth.otp.requested` | Auth | Notification |
+| `auth.user.registered` | Auth | Notification, Audit |
+| `auth.user.loggedin` | Auth | Notification, Audit |
+| `tasks.task.assigned` | Tasks | Notification, Analytics, Audit |
+| `tasks.task.completed` | Tasks | Analytics, Audit |
+| `tasks.tasks.bulkAssigned` | Tasks | Audit |
+| `tasks.attendance.checkin` / `.checkout` | Tasks | Analytics, Audit |
+| `tasks.leave.applied` / `.updated` | Tasks | Analytics, Audit |
+| `tasks.deadline.reminder` | Tasks (scheduled job) | Notification |
+| `calendar.day.updated` | Tasks | Notification |
+| `projects.project.created` | Projects | Analytics, Audit |
+| `projects.intern.assigned` / `.interns.bulkAssigned` | Projects | Notification, Audit |
+| `intern.*` (documents, skills, certificates, evaluations) | Intern | Audit |
+
+The **Audit Service** binds a queue to `#` (all routing keys) and persists every event for compliance/traceability.
+
+---
+
+## 🧪 Health Checks
+
+Every service exposes:
+```
+GET /health → { "status": "ok" }
+```
+Useful for container orchestrators / load balancer liveness checks.
+
+---
 
 
-🔗 API Integration (Services)
-All API calls are organized into service modules inside src/services/. Each module corresponds to a backend microservice (via the gateway). All modules use the same api instance from src/lib/axios.js, which automatically attaches the JWT token and handles token refresh.
-
-Service Module	File	Description
-authApi	authApi.js	Login, register, verify, refresh, logout, me, users
-internApi	internApi.js	Profile, documents, skills, certificates, evaluations
-tasksApi	tasksApi.js	Tasks, attendance, leaves, worklogs, calendar
-projectsApi	projectsApi.js	Projects, assignments, bulk assign
-analyticsApi	analyticsApi.js	Analytics endpoints
-notificationsApi	notificationsApi.js	Notifications, bulk email
-configApi	configApi.js	Feature toggles, settings, schemas, workflows, permissions
-auditApi	auditApi.js	Audit logs
-Each method returns the data property from the axios response (i.e., the parsed JSON). Error handling is done in the components using react‑query or try/catch.
-
-
-🏃 Running the App
-Development: npm run dev (Vite dev server with HMR)
-
-Production build: npm run build (outputs to dist/)
-
-Preview production build: npm run preview
-
-
-   
+<div align="center">Built as a microservices reference implementation for internship program management.</div>
